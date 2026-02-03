@@ -27,3 +27,6 @@ dev-dist
 #Project Specific
 Generated
 .edge
+
+#Sensiive
+.env

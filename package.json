@@ -3,6 +3,16 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "dependencies": {
+    "@azure/msal-browser": "^5.1.0",
+    "@microsoft/kiota-abstractions": "1.0.0-preview.99",
+    "@microsoft/kiota-http-fetchlibrary": "1.0.0-preview.99",
+    "@microsoft/kiota-serialization-form": "1.0.0-preview.99",
+    "@microsoft/kiota-serialization-json": "1.0.0-preview.99",
+    "@microsoft/kiota-serialization-multipart": "1.0.0-preview.99",
+    "@microsoft/kiota-serialization-text": "1.0.0-preview.99",
+    "deep-equality-data-structures": "^2.0.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -10,15 +20,16 @@
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json"
   },
   "devDependencies": {
-    "@sveltejs/vite-plugin-svelte": "^6.2.1",
-    "@tsconfig/svelte": "^5.0.5",
-    "@types/node": "^24.6.2",
+    "@biomejs/biome": "^2.3.14",
+    "@sveltejs/vite-plugin-svelte": "^6.2.4",
+    "@tsconfig/svelte": "^5.0.6",
+    "@types/node": "^25.2.0",
     "@vite-pwa/assets-generator": "^1.0.2",
-    "svelte": "^5.39.9",
-    "svelte-check": "^4.3.2",
+    "svelte": "^5.49.1",
+    "svelte-check": "^4.3.6",
     "typescript": "~5.9.3",
-    "vite": "npm:rolldown-vite@latest",
-    "vite-plugin-pwa": "^1.1.0",
+    "vite": "npm:rolldown-vite@^7.3.1",
+    "vite-plugin-pwa": "^1.2.0",
     "workbox-window": "^7.4.0"
   },
   "resolutions": {
@@ -26,6 +37,6 @@
     "sharp-ico": "^0.1.5"
   },
   "overrides": {
-    "vite": "npm:rolldown-vite@latest"
+    "vite": "npm:rolldown-vite@^7.3.1"
   }
 }
