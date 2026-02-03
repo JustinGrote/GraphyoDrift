@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "dependencies": {
-    "@azure/msal-browser": "^5.1.0",
+    "@azure/msal-browser": "^3.30.0",
     "@microsoft/kiota-abstractions": "1.0.0-preview.99",
     "@microsoft/kiota-http-fetchlibrary": "1.0.0-preview.99",
     "@microsoft/kiota-serialization-form": "1.0.0-preview.99",

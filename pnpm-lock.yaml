@@ -13,8 +13,8 @@ importers:
   .:
     dependencies:
       '@azure/msal-browser':
-        specifier: ^5.1.0
-        version: 5.1.0
+        specifier: ^3.30.0
+        version: 3.30.0
       '@microsoft/kiota-abstractions':
         specifier: 1.0.0-preview.99
         version: 1.0.0-preview.99
@@ -79,12 +79,12 @@ packages:
     peerDependencies:
       ajv: '>=8'
 
-  '@azure/msal-browser@5.1.0':
-    resolution: {integrity: sha512-5tZcp1zcALSLJvnxkmJ8MYxLtZzEyq28wX2jSV4Kz2QaHty4eYIb/Pc44DARLfgHD+G9F82k9nD7J89MbFRQxA==}
+  '@azure/msal-browser@3.30.0':
+    resolution: {integrity: sha512-I0XlIGVdM4E9kYP5eTjgW8fgATdzwxJvQ6bm2PNiHaZhEuUz47NYw1xHthC9R+lXz4i9zbShS0VdLyxd7n0GGA==}
     engines: {node: '>=0.8.0'}
 
-  '@azure/msal-common@16.0.3':
-    resolution: {integrity: sha512-3aedNnM0CHVuVZ+BqembdZWgovqe96BJ4YxGoIK0+qhoBZQsAhfwXdhjen72K94pkSQHtzlJ7fAq6w7knFZsng==}
+  '@azure/msal-common@14.16.1':
+    resolution: {integrity: sha512-nyxsA6NA4SVKh5YyRpbSXiMr7oQbwark7JU9LMeg6tJYTSPyAGkdx61wPT4gyxZfxlSxMMEyAsWaubBlNyIa1w==}
     engines: {node: '>=0.8.0'}
 
   '@babel/code-frame@7.29.0':
@@ -2392,11 +2392,11 @@ snapshots:
       jsonpointer: 5.0.1
       leven: 3.1.0
 
-  '@azure/msal-browser@5.1.0':
+  '@azure/msal-browser@3.30.0':
     dependencies:
-      '@azure/msal-common': 16.0.3
+      '@azure/msal-common': 14.16.1
 
-  '@azure/msal-common@16.0.3': {}
+  '@azure/msal-common@14.16.1': {}
 
   '@babel/code-frame@7.29.0':
     dependencies:
