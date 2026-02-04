@@ -21,6 +21,7 @@
 	"files": {
 		"includes": [
 			"**",
+			"!Generated",
 			"!node_modules",
 			"!dist",
 			"!**/*.svelte"

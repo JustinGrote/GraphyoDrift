@@ -6,13 +6,12 @@ import {
   PublicClientApplication,
 } from '@azure/msal-browser'
 import {
-  type AccessTokenProvider,
-  AllowedHostsValidator,
-  BaseBearerTokenAuthenticationProvider,
-} from '@microsoft/kiota-abstractions'
+  createGraphClient,
+  type GraphClient,
+} from '../../Generated/graphChangeSdk/graphClient'
 import { FetchRequestAdapter } from '@microsoft/kiota-http-fetchlibrary'
 import { DeepMap } from 'deep-equality-data-structures'
-import { createGraphClient, type GraphClient } from '../../Generated/graphChangeSdk/graphClient'
+import { GraphMsalAuthenticationProvider } from './MsalAuthenticationProvider'
 
 const configuredClientId =
   (import.meta.env.VITE_AAD_CLIENT_ID as string | undefined) ?? '513dbbf0-2564-4fc0-8b58-d407e30a69d4'
@@ -21,9 +20,6 @@ const tenantId = import.meta.env.VITE_AAD_TENANT_ID as string | undefined
 const authority = tenantId
   ? `https://login.microsoftonline.com/${tenantId}`
   : 'https://login.microsoftonline.com/common'
-
-const graphDefaultScope = 'https://graph.microsoft.com/.default'
-const graphDefaultHosts = ['graph.microsoft.com', 'graph.microsoft.us']
 
 type MsalConfig = ConstructorParameters<typeof PublicClientApplication>[0]
 
@@ -54,45 +50,6 @@ async function getMsalInstanceAsync(config: MsalConfig): Promise<IPublicClientAp
   return instance
 }
 
-/** This is an adapter to the MsalAccessTokenProvider for graph to present it as a bearer toekn */
-class GraphMsalAccessTokenProvider extends BaseBearerTokenAuthenticationProvider implements AccessTokenProvider {
-  constructor(msalInstance: IPublicClientApplication, scopes: string[], allowedHosts: string[] = graphDefaultHosts) {
-    super(new MsalAccessTokenProvider(scopes, allowedHosts, msalInstance))
-  }
-
-  getAuthorizationToken = this.accessTokenProvider.getAuthorizationToken
-  getAllowedHostsValidator = this.accessTokenProvider.getAllowedHostsValidator
-}
-
-/** This provides access tokens based on an MSAL instance. */
-class MsalAccessTokenProvider implements AccessTokenProvider {
-  private scopes: string[]
-  private allowedHosts: Set<string>
-  private msalInstance: IPublicClientApplication
-
-  constructor(scopes: string[], allowedHosts: string[] = graphDefaultHosts, msalInstance: IPublicClientApplication) {
-    this.scopes = scopes
-    this.allowedHosts = new Set(allowedHosts)
-    this.msalInstance = msalInstance
-  }
-
-  async getAuthorizationToken(
-    _url?: string,
-    _additionalAuthenticationContext?: Record<string, unknown>,
-  ): Promise<string> {
-    await this.msalInstance.initialize()
-
-    const result = await this.msalInstance.acquireTokenSilent({
-      scopes: this.scopes,
-    })
-    return result.accessToken
-  }
-
-  getAllowedHostsValidator(): AllowedHostsValidator {
-    return new AllowedHostsValidator(this.allowedHosts)
-  }
-}
-
 export function isMsalConfigured(): boolean {
   return !!configuredClientId
 }
@@ -104,16 +61,25 @@ export function getActiveAccount(): AccountInfo | null {
   return msalInstance.getActiveAccount()
 }
 
-export async function signIn(scopes: string[] = [graphDefaultScope]) {
+export async function signIn(scopes: string[] = ['ConfigurationMonitoring.ReadWrite.All']) {
   const instance = await getMsalInstanceAsync({
     auth: { clientId: configuredClientId, authority },
   })
 
   await instance.initialize()
+  try {
+    const account = instance.getActiveAccount()
+    if (!account) throw new InteractionRequiredAuthError('No Active Account, perform Interactive Login')
 
-  const result = await instance.loginPopup({
-    scopes: scopes,
-  })
+    return instance.acquireTokenSilent({ scopes, account })
+  } catch (error) {
+    if (!(error instanceof InteractionRequiredAuthError)) {
+      throw error
+    }
+  }
+
+  // If the above fails with Interactive Required, perform a popup login
+  const result = await instance.loginPopup({ scopes })
 
   instance.setActiveAccount(result.account)
   return result
@@ -139,7 +105,7 @@ export async function signOut() {
   })
 }
 
-export async function getGraphClient(scopes: string[] = [graphDefaultScope]): Promise<GraphClient> {
+export async function getGraphClient(scopes?: string[]): Promise<GraphClient> {
   const msalInstance = await getMsalInstanceAsync({
     auth: { clientId: configuredClientId, authority },
   })
@@ -155,10 +121,45 @@ export async function getGraphClient(scopes: string[] = [graphDefaultScope]): Pr
     throw new InteractionRequiredAuthError('NotSignedIn', 'You must log in first before using Microsoft Graph client.')
   }
 
-  const newClient = createGraphClient(new FetchRequestAdapter(new GraphMsalAccessTokenProvider(msalInstance, scopes)))
+  // This is our custom bridge to MSAL since the docs only support @azure/identity
+  const msalAuthProvider = new GraphMsalAuthenticationProvider(msalInstance, scopes)
+
+  const newClient = createGraphClient(new FetchRequestAdapter(msalAuthProvider))
 
   graphClientCache.set(msalInstance, newClient)
   graphClientInstanceMap.set(account, newClient)
   accountInstanceMap.set(account, msalInstance)
   return newClient
+}
+
+export async function createConfigurationSnapshot(scopes: string[] = ['ConfigurationMonitoring.ReadWrite.All']) {
+  const client = await getGraphClient(scopes)
+  const currentDateTime = new Date().toISOString().replace(/[^\w]/g, '')
+  // 32 character limit on display name, only discoverable via a runtime error
+  const displayName = `GraphyoDrift ${currentDateTime}`.substring(0, 32)
+  const snapshotJob = {
+    displayName,
+    description: 'Snapshot of Conditional Access Policies for drift detection',
+    resources: ['microsoft.entra.conditionalaccesspolicy'],
+  }
+
+  // HACK: Fix when openapi has this endpoint available
+  const snapshotCreateEndpoint = client.admin.configurationManagement.configurationSnapshotJobs.withUrl(
+    'https://graph.microsoft.com/beta/admin/configurationManagement/configurationSnapshots/createSnapshot',
+  )
+
+  const response = await snapshotCreateEndpoint.post(snapshotJob)
+  if (!response) {
+    throw new Error('Failed to create configuration snapshot')
+  }
+  return response
+}
+
+// Parse and convert Graph Errors into regular Error objects for browser processing purposes.
+export function parseGraphErrorMessage(error: unknown) {
+  if (!(error instanceof Error)) {
+    return 'A non-error object was received, this is a bug: ' + JSON.stringify(error)
+  }
+
+  return error.message
 }

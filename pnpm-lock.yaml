@@ -18,19 +18,7 @@ importers:
       '@microsoft/kiota-abstractions':
         specifier: 1.0.0-preview.99
         version: 1.0.0-preview.99
-      '@microsoft/kiota-http-fetchlibrary':
-        specifier: 1.0.0-preview.99
-        version: 1.0.0-preview.99
-      '@microsoft/kiota-serialization-form':
-        specifier: 1.0.0-preview.99
-        version: 1.0.0-preview.99
-      '@microsoft/kiota-serialization-json':
-        specifier: 1.0.0-preview.99
-        version: 1.0.0-preview.99
-      '@microsoft/kiota-serialization-multipart':
-        specifier: 1.0.0-preview.99
-        version: 1.0.0-preview.99
-      '@microsoft/kiota-serialization-text':
+      '@microsoft/kiota-bundle':
         specifier: 1.0.0-preview.99
         version: 1.0.0-preview.99
       deep-equality-data-structures:
@@ -40,6 +28,9 @@ importers:
       '@biomejs/biome':
         specifier: ^2.3.14
         version: 2.3.14
+      '@microsoft/kiota-http-fetchlibrary':
+        specifier: 1.0.0-preview.99
+        version: 1.0.0-preview.99
       '@sveltejs/vite-plugin-svelte':
         specifier: ^6.2.4
         version: 6.2.4(rolldown-vite@7.3.1(@types/node@25.2.0)(esbuild@0.27.2)(jiti@2.6.1)(terser@5.46.0))(svelte@5.49.1)
@@ -941,6 +932,9 @@ packages:
 
   '@microsoft/kiota-abstractions@1.0.0-preview.99':
     resolution: {integrity: sha512-6qrlwGCO3DbvpA7tszqk7JNQPFPDg8gv5NGMTziwdtHqaQrUALKusm3vdJGPVGrbNiZL6/lBaY5NSUvLtlhRCg==}
+
+  '@microsoft/kiota-bundle@1.0.0-preview.99':
+    resolution: {integrity: sha512-AxvO+z6UgWMAT2NfXN36CMhAUm/39tUQt8o32axeEJDS/EvZINDAPstbQV+zK7bJRC8kCqUHhCE/fuHX2dXA+g==}
 
   '@microsoft/kiota-http-fetchlibrary@1.0.0-preview.99':
     resolution: {integrity: sha512-lIruiYf8L7DPG0Fm92QN5YK4zx4sh76EtTONUAqBCxt5AtEJ7KQceBajaXQsjfcndUAp9LmDVdqR44o8sc9/mA==}
@@ -3303,6 +3297,15 @@ snapshots:
       '@std-uritemplate/std-uritemplate': 2.0.8
       tinyduration: 3.4.1
       tslib: 2.8.1
+
+  '@microsoft/kiota-bundle@1.0.0-preview.99':
+    dependencies:
+      '@microsoft/kiota-abstractions': 1.0.0-preview.99
+      '@microsoft/kiota-http-fetchlibrary': 1.0.0-preview.99
+      '@microsoft/kiota-serialization-form': 1.0.0-preview.99
+      '@microsoft/kiota-serialization-json': 1.0.0-preview.99
+      '@microsoft/kiota-serialization-multipart': 1.0.0-preview.99
+      '@microsoft/kiota-serialization-text': 1.0.0-preview.99
 
   '@microsoft/kiota-http-fetchlibrary@1.0.0-preview.99':
     dependencies:

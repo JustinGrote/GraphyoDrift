@@ -3,9 +3,7 @@
 import { onMount } from 'svelte'
 import { InteractionRequiredAuthError } from '@azure/msal-browser'
 import appLogo from '/favicon.svg'
-import { getGraphClient, signIn, signOut, getActiveAccount, isMsalConfigured } from './lib/graphClient'
-
-const scopes = ['https://graph.microsoft.com/.default']
+import { getGraphClient, signIn, signOut, getActiveAccount, isMsalConfigured, createConfigurationSnapshot, parseGraphErrorMessage } from './lib/GraphClient'
 
 let isLoading = $state(false)
 let errorMessage = $state<string | null>(null)
@@ -16,7 +14,7 @@ const loadSnapshotJobs = async () => {
   errorMessage = null
   isLoading = true
   try {
-    const client = await getGraphClient(scopes)
+    const client = await getGraphClient()
     const response = await client.admin.configurationManagement.configurationSnapshotJobs.get({
       queryParameters: {
         top: 25,
@@ -25,12 +23,7 @@ const loadSnapshotJobs = async () => {
     })
     snapshotJobs = (response?.value as Array<Record<string, unknown>> | undefined) ?? []
   } catch (error) {
-    if (error instanceof InteractionRequiredAuthError) {
-      errorMessage = 'Please sign in to access Microsoft Graph.'
-    } else {
-      const message = error instanceof Error ? error.message : 'Unable to load snapshot jobs.'
-      errorMessage = message
-    }
+    errorMessage = parseGraphErrorMessage(error)
   } finally {
     isLoading = false
   }
@@ -40,7 +33,7 @@ const handleSignIn = async () => {
   errorMessage = null
   isLoading = true
   try {
-    const result = await signIn(scopes)
+    const result = await signIn()
     accountName = result.account?.name ?? result.account?.username ?? null
     isLoading = false
     await loadSnapshotJobs()
@@ -61,6 +54,19 @@ const handleSignOut = async () => {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Sign-out failed.'
     errorMessage = message
+  } finally {
+    isLoading = false
+  }
+}
+
+const handleCreateSnapshot = async () => {
+  errorMessage = null
+  isLoading = true
+  try {
+    await createConfigurationSnapshot()
+    await loadSnapshotJobs()
+  } catch (error) {
+    errorMessage = parseGraphErrorMessage(error)
   } finally {
     isLoading = false
   }
@@ -118,6 +124,7 @@ onMount(async () => {
         <span class="hint">Set VITE_AAD_CLIENT_ID in a .env file.</span>
       {/if}
     </div>
+    <button class="text-button" onclick={handleCreateSnapshot} disabled={isLoading}>Create configuration snapshot</button>
     {#if errorMessage}
       <div class="callout error">{errorMessage}</div>
     {/if}
@@ -131,7 +138,7 @@ onMount(async () => {
     {#if isLoading && snapshotJobs.length === 0}
       <p class="hint">Loading snapshot jobs…</p>
     {:else if snapshotJobs.length === 0}
-      <p class="hint">No snapshot jobs found yet. Sign in to load data.</p>
+      <p class="hint">No snapshot jobs found yet. <button class="text-button" onclick={handleCreateSnapshot} disabled={isLoading}>Create configuration snapshot</button></p>
     {:else}
       <div class="table">
         <div class="row header">
