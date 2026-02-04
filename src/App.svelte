@@ -3,15 +3,15 @@
 import { onMount } from 'svelte'
 import appLogo from '/favicon.svg'
 import { getGraphClient, signIn, signOut, getActiveAccount, isMsalConfigured, createConfigurationSnapshot, parseGraphErrorMessage } from './lib/GraphClient'
-import type { ConfigurationBaseline, ConfigurationSnapshotJob } from '../Generated/graphChangeSdk/models';
+import SnapshotModal from './lib/SnapshotModal.svelte'
+import type { ConfigurationSnapshotJob } from '../Generated/graphChangeSdk/models';
 
 let isLoading = $state(false)
 let errorMessage = $state<string | null>(null)
 let accountName = $state<string | null>(null)
 let snapshotJobs = $state<ConfigurationSnapshotJob[]>([])
 let showModal = $state(false)
-let selectedSnapshot = $state<ConfigurationBaseline | undefined>(undefined)
-let isLoadingSnapshot = $state(false)
+let currentSnapshotUri = $state<string | null>(null)
 
 const loadSnapshotJobs = async () => {
   errorMessage = null
@@ -75,30 +75,9 @@ const handleCreateSnapshot = async () => {
   }
 }
 
-const handleViewSnapshot = async (snapshotUri?: string | null) => {
-  isLoadingSnapshot = true
+const handleViewSnapshot = (snapshotUri?: string | null) => {
+  currentSnapshotUri = snapshotUri ?? null
   showModal = true
-  selectedSnapshot = undefined
-  try {
-    if (!snapshotUri) {
-      throw new Error('Invalid snapshot URI.')
-    }
-
-    const client = await getGraphClient()
-    const snapshot = await client.admin.configurationManagement.configurationSnapshots
-      .byConfigurationBaselineId('fromWithUrl').withUrl(snapshotUri).get()
-    selectedSnapshot = snapshot
-  } catch (error) {
-    errorMessage = parseGraphErrorMessage(error)
-    showModal = false
-  } finally {
-    isLoadingSnapshot = false
-  }
-}
-
-const closeModal = () => {
-  showModal = false
-  selectedSnapshot = undefined
 }
 
 const formatExpiresAt = (completed?: Date | string | null) => {
@@ -250,27 +229,10 @@ onMount(async () => {
     {/if}
   </section>
 
-  {#if showModal}
-    <div class="modal-overlay" onclick={closeModal}>
-      <div class="modal" onclick={(e) => e.stopPropagation()}>
-        <div class="modal-header">
-          <h2>Configuration Snapshot</h2>
-          <button class="close-button" onclick={closeModal}>✕</button>
-        </div>
-        <div class="modal-body">
-          {#if isLoadingSnapshot}
-            <p>Loading snapshot...</p>
-          {:else if selectedSnapshot}
-            <div class="detail-row">
-              <strong>Content:</strong>
-              <pre>{JSON.stringify(selectedSnapshot.resources, null, 2)}</pre>
-            </div>
-          {/if}
-        </div>
-        <div class="modal-footer">
-          <button class="primary" onclick={closeModal}>Close</button>
-        </div>
-      </div>
-    </div>
-  {/if}
+  <SnapshotModal
+    bind:show={showModal}
+    bind:snapshotUri={currentSnapshotUri}
+    {snapshotJobs}
+    onError={(msg) => errorMessage = msg}
+  />
 </main>

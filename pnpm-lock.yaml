@@ -24,6 +24,9 @@ importers:
       deep-equality-data-structures:
         specifier: ^2.0.0
         version: 2.0.0
+      json-diff-viewer-component:
+        specifier: ^0.6.0
+        version: 0.6.0
     devDependencies:
       '@biomejs/biome':
         specifier: ^2.3.14
@@ -1690,6 +1693,9 @@ packages:
     resolution: {integrity: sha512-/sM3dO2FOzXjKQhJuo0Q173wf2KOo8t4I8vHy6lF9poUp7bKT0/NHE8fPX23PwfhnykfqnC2xRxOnVw5XuGIaA==}
     engines: {node: '>=6'}
     hasBin: true
+
+  json-diff-viewer-component@0.6.0:
+    resolution: {integrity: sha512-F7HgRvl1urEu27FangSX4HPDwMuRwsC1NN+X9crxw8BLubOORzeXm07AlXkpT0NbWN0rBI2Ryl0D//wQ3be97g==}
 
   json-schema-traverse@1.0.0:
     resolution: {integrity: sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug==}
@@ -4110,6 +4116,8 @@ snapshots:
   js-tokens@4.0.0: {}
 
   jsesc@3.1.0: {}
+
+  json-diff-viewer-component@0.6.0: {}
 
   json-schema-traverse@1.0.0: {}
 

@@ -7,7 +7,8 @@
     "@azure/msal-browser": "^3.30.0",
     "@microsoft/kiota-abstractions": "1.0.0-preview.99",
     "@microsoft/kiota-bundle": "1.0.0-preview.99",
-    "deep-equality-data-structures": "^2.0.0"
+    "deep-equality-data-structures": "^2.0.0",
+    "json-diff-viewer-component": "^0.6.0"
   },
   "scripts": {
     "dev": "vite",
