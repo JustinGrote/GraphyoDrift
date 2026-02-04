@@ -126,13 +126,19 @@ onMount(async () => {
 })
 </script>
 
-<main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<main>
+  <div class="p-8">
+    <Alert>
+      <span class="font-medium">Info alert!</span>
+      Change a few things up and try submitting again.
+    </Alert>
+  </div>
   <!-- Hero Section -->
-  <div class="flex flex-col sm:flex-row gap-6 items-start sm:items-center mb-8 bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-    <img src={appLogo} class="w-16 h-16 flex-shrink-0" alt="GraphyoDrift Logo" />
+  <div class="flex flex-col">
+    <img src={appLogo} class="w-16 h-16 shrink-0" alt="GraphyoDrift Logo" />
     <div>
-      <h1 class="text-4xl font-bold mb-2">GraphyoDrift</h1>
-      <p class="text-gray-600 max-w-2xl">
+      <h1 class="">GraphyoDrift</h1>
+      <p class="">
         Monitor configuration drift in Microsoft Graph. GraphyoDrift snapshots configuration
         resources and highlights changes over time using Unified Configuration Tenant
         Management (UCTM) APIs.
