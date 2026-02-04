@@ -223,9 +223,19 @@ onMount(async () => {
             <span>{job.status ?? '—'}</span>
             <span>{job.createdBy?.user?.displayName ?? job.createdBy?.application?.displayName ?? job.createdBy?.device?.displayName ?? '—'}</span>
             <span>{job.createdDateTime?.toLocaleString() ?? '—'}</span>
-            <span>{job.completedDateTime?.toLocaleString() ?? '—'}</span>
+            <span>
+              {#if (job.status as string) === 'successful' || (job.status as string) === 'partiallySuccessful'}
+                {job.completedDateTime?.toLocaleString() ?? '—'}
+              {:else}
+                —
+              {/if}
+            </span>
             <span class:expires-soon={isExpiringSoon(job.completedDateTime ?? null)}>
-              {formatExpiresAt(job.completedDateTime ?? null)}
+              {#if (job.status as string) === 'successful' || (job.status as string) === 'partiallySuccessful'}
+                {formatExpiresAt(job.completedDateTime ?? null)}
+              {:else}
+                —
+              {/if}
             </span>
             <span>
               {#if ((job.status as string) === 'successful' || (job.status as string) === 'partiallySuccessful') && job.resourceLocation}
