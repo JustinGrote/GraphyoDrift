@@ -4,6 +4,7 @@ import { onMount } from 'svelte'
 import appLogo from '/favicon.svg'
 import { getGraphClient, signIn, signOut, getActiveAccount, isMsalConfigured, createConfigurationSnapshot, parseGraphErrorMessage } from './lib/GraphClient'
 import SnapshotModal from './lib/SnapshotModal.svelte'
+import { Button, Card, Badge, Table, TableBody, TableHead, TableHeadCell, TableBodyRow, TableBodyCell, Alert } from 'flowbite-svelte'
 import type { ConfigurationSnapshotJob } from '../Generated/graphChangeSdk/models';
 
 let isLoading = $state(false)
@@ -125,109 +126,117 @@ onMount(async () => {
 })
 </script>
 
-<main class="page">
-  <header class="hero">
-    <img src={appLogo} class="logo" alt="GraphyoDrift Logo" />
+<main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- Hero Section -->
+  <div class="flex flex-col sm:flex-row gap-6 items-start sm:items-center mb-8 bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+    <img src={appLogo} class="w-16 h-16 flex-shrink-0" alt="GraphyoDrift Logo" />
     <div>
-      <h1>GraphyoDrift</h1>
-      <p class="subtitle">
+      <h1 class="text-4xl font-bold mb-2">GraphyoDrift</h1>
+      <p class="text-gray-600 max-w-2xl">
         Monitor configuration drift in Microsoft Graph. GraphyoDrift snapshots configuration
         resources and highlights changes over time using Unified Configuration Tenant
         Management (UCTM) APIs.
       </p>
     </div>
-  </header>
+  </div>
 
-  <section class="card">
-    <div class="card-header">
-      <h2>Connect to Microsoft Graph</h2>
+  <!-- Sign In Card -->
+  <Card>
+    <div class="mb-4">
+      <h2 class="text-2xl font-bold mb-2">Connect to Microsoft Graph</h2>
       {#if accountName}
-        <span class="pill">Signed in as {accountName}</span>
+        <Badge large>{accountName}</Badge>
       {/if}
     </div>
-    <p>
+    <p class="mb-4">
       Sign in to request the <strong>ConfigurationMonitoring.ReadWrite.All</strong> scope and
       load your configuration snapshot jobs.
     </p>
-    <div class="actions">
+    <div class="flex gap-4">
       {#if accountName}
-        <button class="primary" onclick={handleSignOut} disabled={isLoading}>
+        <Button color="red" onclick={handleSignOut} disabled={isLoading}>
           {isLoading ? 'Working…' : 'Sign out'}
-        </button>
+        </Button>
       {:else}
-        <button class="primary" onclick={handleSignIn} disabled={isLoading || !isMsalConfigured()}>
+        <Button color="blue" onclick={handleSignIn} disabled={isLoading || !isMsalConfigured()}>
           {isLoading ? 'Working…' : 'Sign in to Graph'}
-        </button>
-      {/if}
-      {#if !isMsalConfigured()}
-        <span class="hint">Set VITE_AAD_CLIENT_ID in a .env file.</span>
+        </Button>
       {/if}
     </div>
-    {#if errorMessage}
-      <div class="callout error">{errorMessage}</div>
+    {#if !isMsalConfigured()}
+      <p class="text-sm text-gray-500">Set VITE_AAD_CLIENT_ID in a .env file.</p>
     {/if}
-  </section>
+    {#if errorMessage}
+      <Alert color="red" class="mt-4">{errorMessage}</Alert>
+    {/if}
+  </Card>
 
-  <section class="card">
-    <div class="card-header">
-      <h2>Snapshot jobs</h2>
-      <span class="pill">{snapshotJobs.length} total</span>
+  <!-- Snapshot Jobs Card -->
+  <Card>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <h2 class="text-2xl font-bold">Snapshot jobs</h2>
+      <Badge large>{snapshotJobs.length} total</Badge>
     </div>
-    <div class="actions">
-      <button class="primary" onclick={handleCreateSnapshot} disabled={isLoading || !accountName}>
+    <div class="flex gap-2 mb-6">
+      <Button color="blue" onclick={handleCreateSnapshot} disabled={isLoading || !accountName}>
         Create snapshot
-      </button>
-      <button class="primary" onclick={loadSnapshotJobs} disabled={isLoading || !accountName}>
+      </Button>
+      <Button color="alternative" onclick={loadSnapshotJobs} disabled={isLoading || !accountName}>
         Refresh
-      </button>
+      </Button>
     </div>
+
     {#if isLoading && snapshotJobs.length === 0}
-      <p class="hint">Loading snapshot jobs…</p>
+      <p class="text-gray-500">Loading snapshot jobs…</p>
     {:else if snapshotJobs.length === 0}
-      <p class="hint">No snapshot jobs found yet.</p>
+      <p class="text-gray-500">No snapshot jobs found yet.</p>
     {:else}
-      <div class="table">
-        <div class="row header">
-          <span>Name</span>
-          <span>Status</span>
-          <span>Created by</span>
-          <span>Created</span>
-          <span>Completed</span>
-          <span>Expires</span>
-          <span>Result</span>
-        </div>
-        {#each snapshotJobs as job}
-          <div class="row">
-            <span>{job.displayName ?? '—'}</span>
-            <span>{job.status ?? '—'}</span>
-            <span>{job.createdBy?.user?.displayName ?? job.createdBy?.application?.displayName ?? job.createdBy?.device?.displayName ?? '—'}</span>
-            <span>{job.createdDateTime?.toLocaleString() ?? '—'}</span>
-            <span>
-              {#if (job.status as string) === 'successful' || (job.status as string) === 'partiallySuccessful'}
-                {job.completedDateTime?.toLocaleString() ?? '—'}
-              {:else}
-                —
-              {/if}
-            </span>
-            <span class:expires-soon={isExpiringSoon(job.completedDateTime ?? null)}>
-              {#if (job.status as string) === 'successful' || (job.status as string) === 'partiallySuccessful'}
-                {formatExpiresAt(job.completedDateTime ?? null)}
-              {:else}
-                —
-              {/if}
-            </span>
-            <span>
-              {#if ((job.status as string) === 'successful' || (job.status as string) === 'partiallySuccessful') && job.resourceLocation}
-                <button class="text-button" onclick={() => handleViewSnapshot(job.resourceLocation)}>View</button>
-              {:else}
-                —
-              {/if}
-            </span>
-          </div>
-        {/each}
+      <div class="overflow-x-auto">
+        <Table>
+          <TableHead>
+            <TableHeadCell>Name</TableHeadCell>
+            <TableHeadCell>Status</TableHeadCell>
+            <TableHeadCell>Created by</TableHeadCell>
+            <TableHeadCell>Created</TableHeadCell>
+            <TableHeadCell>Completed</TableHeadCell>
+            <TableHeadCell>Expires</TableHeadCell>
+            <TableHeadCell>Result</TableHeadCell>
+          </TableHead>
+          <TableBody>
+            {#each snapshotJobs as job}
+              <TableBodyRow>
+                <TableBodyCell>{job.displayName ?? '—'}</TableBodyCell>
+                <TableBodyCell>{job.status ?? '—'}</TableBodyCell>
+                <TableBodyCell>{job.createdBy?.user?.displayName ?? job.createdBy?.application?.displayName ?? job.createdBy?.device?.displayName ?? '—'}</TableBodyCell>
+                <TableBodyCell>{job.createdDateTime?.toLocaleString() ?? '—'}</TableBodyCell>
+                <TableBodyCell>
+                  {#if (job.status as string) === 'successful' || (job.status as string) === 'partiallySuccessful'}
+                    {job.completedDateTime?.toLocaleString() ?? '—'}
+                  {:else}
+                    —
+                  {/if}
+                </TableBodyCell>
+                <TableBodyCell class={isExpiringSoon(job.completedDateTime ?? null) ? 'text-red-600 font-semibold' : ''}>
+                  {#if (job.status as string) === 'successful' || (job.status as string) === 'partiallySuccessful'}
+                    {formatExpiresAt(job.completedDateTime ?? null)}
+                  {:else}
+                    —
+                  {/if}
+                </TableBodyCell>
+                <TableBodyCell>
+                  {#if ((job.status as string) === 'successful' || (job.status as string) === 'partiallySuccessful') && job.resourceLocation}
+                    <Button color="alternative" size="sm" onclick={() => handleViewSnapshot(job.resourceLocation)}>View</Button>
+                  {:else}
+                    —
+                  {/if}
+                </TableBodyCell>
+              </TableBodyRow>
+            {/each}
+          </TableBody>
+        </Table>
       </div>
     {/if}
-  </section>
+  </Card>
 
   <SnapshotModal
     bind:show={showModal}

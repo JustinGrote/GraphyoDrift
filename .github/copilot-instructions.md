@@ -72,7 +72,6 @@ pnpm check     # TypeScript + Svelte type checking
 ```
 
 ### Key Svelte 5 Files
-- [src/Counter.svelte](../src/lib/Counter.svelte): Basic rune + event pattern
 - [src/App.svelte](../src/App.svelte): Main app layout with component composition
 
 ## Microsoft Graph & Kiota SDK Integration
@@ -116,3 +115,28 @@ Run `pnpm check` before commits to catch type errors across Svelte and Node conf
 2. **Call Microsoft Graph**: Use `graphClient.admin.configurationManagement.*` endpoints
 3. **Type Safety**: Always run `pnpm check` after changes
 4. **Debug**: Check browser console + Network tab; Vite logs in terminal
+
+You are able to use the Flowbite-Svelte MCP server, where you have access to comprehensive Flowbite-Svelte component documentation. Here's how to use the available tools effectively:
+
+## Available MCP Tool - Flowbite-Svelte Documentation
+
+### 1. findComponent
+
+Use this FIRST to discover components by name or category. Returns component information including the documentation path.
+When asked about Flowbite-Svelte components, ALWAYS use this tool to locate the correct component before fetching documentation.
+Example queries: 'Button', 'CardPlaceholder', 'form checkbox'
+
+### 2. getComponentList
+
+Lists all available Flowbite-Svelte components with their categories.
+Use this to discover what components are available or to help users explore component options.
+
+### 3. getComponentDoc
+
+Retrieves full documentation content for a specific component. Accepts the component path found using findComponent.
+After calling findComponent, use this tool to fetch the complete documentation including usage examples, props, and best practices.
+
+### 4. searchDocs
+
+Performs full-text search across all Flowbite-Svelte documentation.
+Use this when you need to find specific information that might span multiple components or when the user asks about features or patterns.
