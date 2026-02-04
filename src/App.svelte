@@ -1,14 +1,17 @@
 <script lang="ts">
 // biome-ignore-all lint/correctness/noUnusedVariables: Doesnt work with svelte
 import { onMount } from 'svelte'
-import { InteractionRequiredAuthError } from '@azure/msal-browser'
 import appLogo from '/favicon.svg'
 import { getGraphClient, signIn, signOut, getActiveAccount, isMsalConfigured, createConfigurationSnapshot, parseGraphErrorMessage } from './lib/GraphClient'
+import type { ConfigurationBaseline, ConfigurationSnapshotJob } from '../Generated/graphChangeSdk/models';
 
 let isLoading = $state(false)
 let errorMessage = $state<string | null>(null)
 let accountName = $state<string | null>(null)
-let snapshotJobs = $state<Array<Record<string, unknown>>>([])
+let snapshotJobs = $state<ConfigurationSnapshotJob[]>([])
+let showModal = $state(false)
+let selectedSnapshot = $state<ConfigurationBaseline | undefined>(undefined)
+let isLoadingSnapshot = $state(false)
 
 const loadSnapshotJobs = async () => {
   errorMessage = null
@@ -21,7 +24,7 @@ const loadSnapshotJobs = async () => {
         orderby: ['createdDateTime desc'],
       },
     })
-    snapshotJobs = (response?.value as Array<Record<string, unknown>> | undefined) ?? []
+    snapshotJobs = response?.value ?? []
   } catch (error) {
     errorMessage = parseGraphErrorMessage(error)
   } finally {
@@ -70,6 +73,32 @@ const handleCreateSnapshot = async () => {
   } finally {
     isLoading = false
   }
+}
+
+const handleViewSnapshot = async (snapshotUri?: string | null) => {
+  isLoadingSnapshot = true
+  showModal = true
+  selectedSnapshot = undefined
+  try {
+    if (!snapshotUri) {
+      throw new Error('Invalid snapshot URI.')
+    }
+
+    const client = await getGraphClient()
+    const snapshot = await client.admin.configurationManagement.configurationSnapshots
+      .byConfigurationBaselineId('fromWithUrl').withUrl(snapshotUri).get()
+    selectedSnapshot = snapshot
+  } catch (error) {
+    errorMessage = parseGraphErrorMessage(error)
+    showModal = false
+  } finally {
+    isLoadingSnapshot = false
+  }
+}
+
+const closeModal = () => {
+  showModal = false
+  selectedSnapshot = undefined
 }
 
 onMount(async () => {
@@ -149,20 +178,54 @@ onMount(async () => {
     {:else}
       <div class="table">
         <div class="row header">
-          <span>ID</span>
+          <span>Name</span>
           <span>Status</span>
+          <span>Created by</span>
           <span>Created</span>
-          <span>Last updated</span>
+          <span>Completed</span>
+          <span>Result</span>
         </div>
         {#each snapshotJobs as job}
           <div class="row">
-            <span>{(job.id as string) ?? '—'}</span>
-            <span>{(job.status as string) ?? (job.state as string) ?? '—'}</span>
-            <span>{(job.createdDateTime as string) ?? '—'}</span>
-            <span>{(job.lastModifiedDateTime as string) ?? '—'}</span>
+            <span>{job.displayName ?? '—'}</span>
+            <span>{job.status ?? '—'}</span>
+            <span>{job.createdBy?.user?.displayName ?? job.createdBy?.application?.displayName ?? job.createdBy?.device?.displayName ?? '—'}</span>
+            <span>{job.createdDateTime?.toLocaleString() ?? '—'}</span>
+            <span>{job.completedDateTime?.toLocaleString() ?? '—'}</span>
+            <span>
+              {#if ((job.status as string) === 'successful' || (job.status as string) === 'partiallySuccessful') && job.resourceLocation}
+                <button class="text-button" onclick={() => handleViewSnapshot(job.resourceLocation)}>View</button>
+              {:else}
+                —
+              {/if}
+            </span>
           </div>
         {/each}
       </div>
     {/if}
   </section>
+
+  {#if showModal}
+    <div class="modal-overlay" onclick={closeModal}>
+      <div class="modal" onclick={(e) => e.stopPropagation()}>
+        <div class="modal-header">
+          <h2>Configuration Snapshot</h2>
+          <button class="close-button" onclick={closeModal}>✕</button>
+        </div>
+        <div class="modal-body">
+          {#if isLoadingSnapshot}
+            <p>Loading snapshot...</p>
+          {:else if selectedSnapshot}
+            <div class="detail-row">
+              <strong>Content:</strong>
+              <pre>{JSON.stringify(selectedSnapshot.resources, null, 2)}</pre>
+            </div>
+          {/if}
+        </div>
+        <div class="modal-footer">
+          <button class="primary" onclick={closeModal}>Close</button>
+        </div>
+      </div>
+    </div>
+  {/if}
 </main>
