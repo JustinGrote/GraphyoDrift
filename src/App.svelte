@@ -124,7 +124,6 @@ onMount(async () => {
         <span class="hint">Set VITE_AAD_CLIENT_ID in a .env file.</span>
       {/if}
     </div>
-    <button class="text-button" onclick={handleCreateSnapshot} disabled={isLoading}>Create configuration snapshot</button>
     {#if errorMessage}
       <div class="callout error">{errorMessage}</div>
     {/if}
@@ -135,10 +134,18 @@ onMount(async () => {
       <h2>Snapshot jobs</h2>
       <span class="pill">{snapshotJobs.length} total</span>
     </div>
+    <div class="actions">
+      <button class="primary" onclick={handleCreateSnapshot} disabled={isLoading || !accountName}>
+        Create snapshot
+      </button>
+      <button class="primary" onclick={loadSnapshotJobs} disabled={isLoading || !accountName}>
+        Refresh
+      </button>
+    </div>
     {#if isLoading && snapshotJobs.length === 0}
       <p class="hint">Loading snapshot jobs…</p>
     {:else if snapshotJobs.length === 0}
-      <p class="hint">No snapshot jobs found yet. <button class="text-button" onclick={handleCreateSnapshot} disabled={isLoading}>Create configuration snapshot</button></p>
+      <p class="hint">No snapshot jobs found yet.</p>
     {:else}
       <div class="table">
         <div class="row header">
