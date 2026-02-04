@@ -101,6 +101,37 @@ const closeModal = () => {
   selectedSnapshot = undefined
 }
 
+const formatExpiresAt = (completed?: Date | string | null) => {
+  if (!completed) {
+    return '—'
+  }
+
+  const base = typeof completed === 'string' ? new Date(completed) : completed
+  if (Number.isNaN(base.getTime())) {
+    return '—'
+  }
+
+  const expires = new Date(base)
+  expires.setDate(expires.getDate() + 7)
+  return expires.toLocaleString()
+}
+
+const isExpiringSoon = (completed?: Date | string | null) => {
+  if (!completed) {
+    return false
+  }
+
+  const base = typeof completed === 'string' ? new Date(completed) : completed
+  if (Number.isNaN(base.getTime())) {
+    return false
+  }
+
+  const expires = new Date(base)
+  expires.setDate(expires.getDate() + 7)
+  const hoursLeft = (expires.getTime() - Date.now()) / (1000 * 60 * 60)
+  return hoursLeft <= 24
+}
+
 onMount(async () => {
   if (!isMsalConfigured()) {
     errorMessage = 'Missing VITE_AAD_CLIENT_ID. Add it to a .env file to enable sign-in.'
@@ -183,6 +214,7 @@ onMount(async () => {
           <span>Created by</span>
           <span>Created</span>
           <span>Completed</span>
+          <span>Expires</span>
           <span>Result</span>
         </div>
         {#each snapshotJobs as job}
@@ -192,6 +224,9 @@ onMount(async () => {
             <span>{job.createdBy?.user?.displayName ?? job.createdBy?.application?.displayName ?? job.createdBy?.device?.displayName ?? '—'}</span>
             <span>{job.createdDateTime?.toLocaleString() ?? '—'}</span>
             <span>{job.completedDateTime?.toLocaleString() ?? '—'}</span>
+            <span class:expires-soon={isExpiringSoon(job.completedDateTime ?? null)}>
+              {formatExpiresAt(job.completedDateTime ?? null)}
+            </span>
             <span>
               {#if ((job.status as string) === 'successful' || (job.status as string) === 'partiallySuccessful') && job.resourceLocation}
                 <button class="text-button" onclick={() => handleViewSnapshot(job.resourceLocation)}>View</button>

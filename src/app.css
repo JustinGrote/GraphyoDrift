@@ -147,7 +147,7 @@ p {
 
 .row {
   display: grid;
-  grid-template-columns: minmax(120px, 1.4fr) minmax(120px, 0.9fr) minmax(120px, 1fr) minmax(140px, 1fr) minmax(140px, 1fr) minmax(100px, 0.7fr);
+  grid-template-columns: minmax(120px, 1.4fr) minmax(120px, 0.9fr) minmax(120px, 1fr) minmax(140px, 1fr) minmax(140px, 1fr) minmax(140px, 1fr) minmax(100px, 0.7fr);
   gap: 12px;
   padding: 12px 14px;
   border-radius: 10px;
@@ -160,6 +160,11 @@ p {
   background: #f3f5f7;
   font-weight: 600;
   color: #323130;
+}
+
+.expires-soon {
+  color: #a4262c;
+  font-weight: 600;
 }
 
 @media (max-width: 768px) {
