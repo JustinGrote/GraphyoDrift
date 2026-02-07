@@ -5,6 +5,18 @@ import tailwindcss from '@tailwindcss/vite';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  build: {
+    target: 'esnext',
+    rolldownOptions: {
+      output: {
+        advancedChunks: {
+          groups: [
+            { name: 'flowbite', test: /[\\/]node_modules[\\/]flowbite.*?[\\/]/},
+          ]
+        }
+      }
+    }
+  },
   plugins: [
     svelte(),
     tailwindcss(),

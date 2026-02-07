@@ -4,7 +4,8 @@ import { onMount } from 'svelte'
 import appLogo from '/favicon.svg'
 import { getGraphClient, signIn, signOut, getActiveAccount, isMsalConfigured, createConfigurationSnapshot, parseGraphErrorMessage } from './lib/GraphClient'
 import SnapshotModal from './lib/SnapshotModal.svelte'
-import { Button, Card, Badge, Table, TableBody, TableHead, TableHeadCell, TableBodyRow, TableBodyCell, Alert } from 'flowbite-svelte'
+import { Button, Card, Badge, Table, TableBody, TableHead, TableHeadCell, TableBodyRow, TableBodyCell, Alert, Heading, P, ButtonGroup } from 'flowbite-svelte'
+import { Section } from 'flowbite-svelte-blocks'
 import type { ConfigurationSnapshotJob } from '../Generated/graphChangeSdk/models';
 
 let isLoading = $state(false)
@@ -18,14 +19,7 @@ const loadSnapshotJobs = async () => {
   errorMessage = null
   isLoading = true
   try {
-    const client = await getGraphClient()
-    const response = await client.admin.configurationManagement.configurationSnapshotJobs.get({
-      queryParameters: {
-        top: 25,
-        orderby: ['createdDateTime desc'],
-      },
-    })
-    snapshotJobs = response?.value ?? []
+    snapshotJobs = getSnapshotJobs()
   } catch (error) {
     errorMessage = parseGraphErrorMessage(error)
   } finally {
@@ -126,78 +120,80 @@ onMount(async () => {
 })
 </script>
 
-<main>
-  <div class="p-8">
-    <Alert>
-      <span class="font-medium">Info alert!</span>
-      Change a few things up and try submitting again.
-    </Alert>
-  </div>
+<main class="p-8 space-y-6">
+  <Alert>
+    <span class="font-medium">Info alert!</span>
+    Change a few things up and try submitting again.
+  </Alert>
+
   <!-- Hero Section -->
-  <div class="flex flex-col">
-    <img src={appLogo} class="w-16 h-16 shrink-0" alt="GraphyoDrift Logo" />
+  <Section class="flex flex-col gap-4">
+    <img src={appLogo} class="w-16 h-16" alt="GraphyoDrift Logo" />
     <div>
-      <h1 class="">GraphyoDrift</h1>
-      <p class="">
+      <Heading tag="h1" class="mb-2">GraphyoDrift</Heading>
+      <P>
         Monitor configuration drift in Microsoft Graph. GraphyoDrift snapshots configuration
         resources and highlights changes over time using Unified Configuration Tenant
         Management (UCTM) APIs.
-      </p>
+      </P>
     </div>
-  </div>
+  </Section>
 
   <!-- Sign In Card -->
   <Card>
-    <div class="mb-4">
-      <h2 class="text-2xl font-bold mb-2">Connect to Microsoft Graph</h2>
-      {#if accountName}
-        <Badge large>{accountName}</Badge>
+    <div class="space-y-4">
+      <div>
+        <Heading tag="h2" class="mb-2">Connect to Microsoft Graph</Heading>
+        {#if accountName}
+          <Badge large>{accountName}</Badge>
+        {/if}
+      </div>
+      <P>
+        Sign in to request the <strong>ConfigurationMonitoring.ReadWrite.All</strong> scope and
+        load your configuration snapshot jobs.
+      </P>
+      <ButtonGroup>
+        {#if accountName}
+          <Button color="red" onclick={handleSignOut} disabled={isLoading}>
+            {isLoading ? 'Working…' : 'Sign out'}
+          </Button>
+        {:else}
+          <Button color="blue" onclick={handleSignIn} disabled={isLoading || !isMsalConfigured()}>
+            {isLoading ? 'Working…' : 'Sign in to Graph'}
+          </Button>
+        {/if}
+      </ButtonGroup>
+      {#if !isMsalConfigured()}
+        <P size="sm" class="text-gray-500">Set VITE_AAD_CLIENT_ID in a .env file.</P>
+      {/if}
+      {#if errorMessage}
+        <Alert color="red">{errorMessage}</Alert>
       {/if}
     </div>
-    <p class="mb-4">
-      Sign in to request the <strong>ConfigurationMonitoring.ReadWrite.All</strong> scope and
-      load your configuration snapshot jobs.
-    </p>
-    <div class="flex gap-4">
-      {#if accountName}
-        <Button color="red" onclick={handleSignOut} disabled={isLoading}>
-          {isLoading ? 'Working…' : 'Sign out'}
-        </Button>
-      {:else}
-        <Button color="blue" onclick={handleSignIn} disabled={isLoading || !isMsalConfigured()}>
-          {isLoading ? 'Working…' : 'Sign in to Graph'}
-        </Button>
-      {/if}
-    </div>
-    {#if !isMsalConfigured()}
-      <p class="text-sm text-gray-500">Set VITE_AAD_CLIENT_ID in a .env file.</p>
-    {/if}
-    {#if errorMessage}
-      <Alert color="red" class="mt-4">{errorMessage}</Alert>
-    {/if}
   </Card>
 
   <!-- Snapshot Jobs Card -->
   <Card>
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-      <h2 class="text-2xl font-bold">Snapshot jobs</h2>
-      <Badge large>{snapshotJobs.length} total</Badge>
-    </div>
-    <div class="flex gap-2 mb-6">
-      <Button color="blue" onclick={handleCreateSnapshot} disabled={isLoading || !accountName}>
-        Create snapshot
-      </Button>
-      <Button color="alternative" onclick={loadSnapshotJobs} disabled={isLoading || !accountName}>
-        Refresh
-      </Button>
-    </div>
+    <div class="space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <Heading tag="h2">Snapshot jobs</Heading>
+        <Badge large>{snapshotJobs.length} total</Badge>
+      </div>
+      <ButtonGroup>
+        <Button color="blue" onclick={handleCreateSnapshot} disabled={isLoading || !accountName}>
+          Create snapshot
+        </Button>
+        <Button color="alternative" onclick={loadSnapshotJobs} disabled={isLoading || !accountName}>
+          Refresh
+        </Button>
+      </ButtonGroup>
 
-    {#if isLoading && snapshotJobs.length === 0}
-      <p class="text-gray-500">Loading snapshot jobs…</p>
-    {:else if snapshotJobs.length === 0}
-      <p class="text-gray-500">No snapshot jobs found yet.</p>
-    {:else}
-      <div class="overflow-x-auto">
+      {#if isLoading && snapshotJobs.length === 0}
+        <P class="text-gray-500">Loading snapshot jobs…</P>
+      {:else if snapshotJobs.length === 0}
+        <P class="text-gray-500">No snapshot jobs found yet.</P>
+      {:else}
+        <div class="overflow-x-auto">
         <Table>
           <TableHead>
             <TableHeadCell>Name</TableHeadCell>
@@ -241,7 +237,8 @@ onMount(async () => {
           </TableBody>
         </Table>
       </div>
-    {/if}
+      {/if}
+    </div>
   </Card>
 
   <SnapshotModal

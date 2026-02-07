@@ -12,6 +12,8 @@
 - **PWA**: vite-plugin-pwa
 - **Cloudflare Workers**: Hosting platform for the PWA. Use wrangler for deployment.
 - **DataTable**: AG Grid for data presentation, snapshot content display, and drift reports
+- **Tailwind CSS**: For styling, with a custom theme to match Microsoft Azure Portal aesthetics
+- **Flowbite-Svelte**: For UI components like modals, buttons, and forms
 
 ### Critical Structure
 - **`/src`**: Svelte components and application logic

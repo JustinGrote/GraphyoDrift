@@ -14,8 +14,9 @@
     "@microsoft/kiota-serialization-text": "1.0.0-preview.99",
     "@popperjs/core": "^2.11.8",
     "deep-equality-data-structures": "^2.0.0",
-    "json-diff-viewer-component": "^0.6.0",
-    "tailwind-merge": "^3.4.0"
+    "flowbite-svelte-blocks": "^2.1.0",
+    "flowbite-svelte-icons": "^3.1.0",
+    "json-diff-viewer-component": "^0.6.0"
   },
   "scripts": {
     "dev": "vite",

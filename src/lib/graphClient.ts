@@ -3,74 +3,123 @@ import {
   createStandardPublicClientApplication,
   InteractionRequiredAuthError,
   type IPublicClientApplication,
-  PublicClientApplication,
+  type PublicClientApplication,
 } from '@azure/msal-browser'
+import { FetchRequestAdapter } from '@microsoft/kiota-http-fetchlibrary'
+import { DeepMap } from 'deep-equality-data-structures'
 import {
   createGraphClient,
   type GraphClient,
 } from '../../Generated/graphChangeSdk/graphClient'
-import { FetchRequestAdapter } from '@microsoft/kiota-http-fetchlibrary'
-import { DeepMap } from 'deep-equality-data-structures'
 import { GraphMsalAuthenticationProvider } from './MsalAuthenticationProvider'
 
-const configuredClientId =
-  (import.meta.env.VITE_AAD_CLIENT_ID as string | undefined) ?? '513dbbf0-2564-4fc0-8b58-d407e30a69d4'
+// Configuration Options
+/** The client ID for the Entra Application to use */
+const configuredClientId = (import.meta.env.VITE_AAD_CLIENT_ID as string | undefined) ?? '513dbbf0-2564-4fc0-8b58-d407e30a69d4'
+/** The tenant ID hint for login, to lock access to a specific tenant and for B2B logins to work */
 const tenantId = import.meta.env.VITE_AAD_TENANT_ID as string | undefined
+
+/** The default MSAL instance, global to the app per best practices. Only changes when Client ID is reconfigured */
+let instance: IPublicClientApplication | undefined
+/** Track the client Id used to create the default instance since it is not exposed */
+let defaultInstanceClientId: string | undefined
+
+/** Scopes for the app. TODO: dynamic scopes for readonly, single-tenant, and multitenant */
+const defaultScopes = ['ConfigurationMonitoring.ReadWrite.All', 'https://management.azure.com/user_impersonation']
+
+/** Sets the client ID for the function. Note that doing this will require a new sign-in if not signed in to that particular client yet */
+type MsalConfig = ConstructorParameters<typeof PublicClientApplication>[0]
+const msalInstanceCache: DeepMap<MsalConfig, IPublicClientApplication> = new DeepMap()
+
+// Sets the client ID for the MSAL instance (or undefined if not cached). A new sign-in will be required if not already performed.
+export function setClientId(clientId: string = configuredClientId) {
+  instance = msalInstanceCache.get({
+    auth: {
+      clientId,
+    },
+  })
+}
 
 const authority = tenantId
   ? `https://login.microsoftonline.com/${tenantId}`
   : 'https://login.microsoftonline.com/common'
 
-type MsalConfig = ConstructorParameters<typeof PublicClientApplication>[0]
-
-// Singleton MSAL instance and account management
-const msalInstanceCache: DeepMap<MsalConfig, IPublicClientApplication> = new DeepMap()
 const graphClientCache: Map<IPublicClientApplication, GraphClient> = new Map()
 const accountInstanceMap: DeepMap<AccountInfo, IPublicClientApplication> = new DeepMap()
 const graphClientInstanceMap: DeepMap<AccountInfo, GraphClient> = new DeepMap()
 
-/** Fetch a singleton Msal Instance based on the configuration */
-
-/** Fetch a Msal instance. Used for dependency injection. Note it will need to be initialized */
-function getMsalInstance(config: MsalConfig): IPublicClientApplication {
+/** Fetches a singleton MSAL instance for a given config, per MSAL best practice */
+async function getMsalInstance(config: MsalConfig = {auth: { clientId: configuredClientId, authority }}): Promise<IPublicClientApplication> {
   const cached = msalInstanceCache.get(config)
   if (cached) return cached
-  const instance = new PublicClientApplication(config)
-  msalInstanceCache.set(config, instance)
-  return instance
-}
 
-async function getMsalInstanceAsync(config: MsalConfig): Promise<IPublicClientApplication> {
-  const cached = msalInstanceCache.get(config)
-  if (cached) return cached
-  // This will initialize and cache the instance
   const instance = await createStandardPublicClientApplication(config)
+  // BUG: Seems to be needed in MSAL LTS. This should not be necessary, might be fixed in future versions
   await instance.initialize()
+
   msalInstanceCache.set(config, instance)
   return instance
 }
 
-export function isMsalConfigured(): boolean {
-  return !!configuredClientId
+/** Represents a Microsoft Azure tenant */
+type Tenant = {
+  /** Country/region name of the address for the tenant */
+  country: string
+  /** Country/region abbreviation for the tenant */
+  countryCode: string
+  /** The default domain for the tenant */
+  defaultDomain: string
+  /** The display name of the tenant */
+  displayName: string
+  /** The list of domains for the tenant */
+  domains: string[]
+  /** The fully qualified ID of the tenant (e.g., /tenants/8d65815f-a5b6-402f-9298-045155da7d74) */
+  id: string
+  /** The tenant's branding logo URL. Only available for 'Home' tenant category */
+  tenantBrandingLogoUrl: string
+  /** Category of the tenant */
+  tenantCategory: string
+  /** The tenant ID (e.g., 8d65815f-a5b6-402f-9298-045155da7d74) */
+  tenantId: string
+  /** The tenant type. Only available for 'Home' tenant category */
+  tenantType: string
+}
+type TenantId = string
+
+export async function getTenants(account: AccountInfo): Promise<Record<TenantId, Tenant>> {
+  const instance = await getMsalInstance()
+  let tokenResponse: { accessToken: string }
+
+  try {
+    tokenResponse = await instance.acquireTokenSilent({ scopes: defaultScopes, account })
+  } catch (err) {
+    if (!(err instanceof InteractionRequiredAuthError)) throw err
+    tokenResponse = await instance.acquireTokenPopup({ scopes: defaultScopes, account })
+  }
+  const response = await fetch('https://management.azure.com/tenants?api-version=2022-12-01', {
+    headers: {
+      Authorization: `Bearer ${tokenResponse.accessToken}`,
+      'Content-Type': 'application/json',
+    },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch tenants: ${response.statusText}`)
+  }
+
+  const data = await response.json()
+  const tenants = data.value satisfies Tenant[]
+  return tenants
 }
 
-export function getActiveAccount(): AccountInfo | null {
-  const msalInstance = getMsalInstance({
-    auth: { clientId: configuredClientId, authority },
-  })
-  return msalInstance.getActiveAccount()
-}
-
-export async function signIn(scopes: string[] = ['ConfigurationMonitoring.ReadWrite.All']) {
-  const instance = await getMsalInstanceAsync({
+export async function signIn(scopes = defaultScopes) {
+  instance = await getMsalInstance({
     auth: { clientId: configuredClientId, authority },
   })
 
-  await instance.initialize()
   try {
     const account = instance.getActiveAccount()
     if (!account) throw new InteractionRequiredAuthError('No Active Account, perform Interactive Login')
-
     return instance.acquireTokenSilent({ scopes, account })
   } catch (error) {
     if (!(error instanceof InteractionRequiredAuthError)) {
@@ -82,11 +131,22 @@ export async function signIn(scopes: string[] = ['ConfigurationMonitoring.ReadWr
   const result = await instance.loginPopup({ scopes })
 
   instance.setActiveAccount(result.account)
+
   return result
 }
 
+export async function getSnapshotJobs() {
+  const client = await getGraphClient()
+  const response = await client.admin.configurationManagement.configurationSnapshotJobs.get({
+    queryParameters: {
+      top: 25,
+      orderby: ['createdDateTime desc'],
+    },
+  })
+}
+
 export async function signOut() {
-  const instance = await getMsalInstanceAsync({
+  const instance = await getMsalInstance({
     auth: { clientId: configuredClientId, authority },
   })
 
@@ -105,10 +165,8 @@ export async function signOut() {
   })
 }
 
-export async function getGraphClient(scopes?: string[]): Promise<GraphClient> {
-  const msalInstance = await getMsalInstanceAsync({
-    auth: { clientId: configuredClientId, authority },
-  })
+export async function getGraphClient(scopes = defaultScopes): Promise<GraphClient> {
+  const msalInstance = await getMsalInstance()
   const existing = graphClientCache.get(msalInstance)
 
   if (existing) return existing
@@ -132,8 +190,8 @@ export async function getGraphClient(scopes?: string[]): Promise<GraphClient> {
   return newClient
 }
 
-export async function createConfigurationSnapshot(scopes: string[] = ['ConfigurationMonitoring.ReadWrite.All']) {
-  const client = await getGraphClient(scopes)
+export async function createConfigurationSnapshot() {
+  const client = await getGraphClient()
   const currentDateTime = new Date().toISOString().replace(/[^\w]/g, '')
   // 32 character limit on display name, only discoverable via a runtime error
   const displayName = `GraphyoDrift ${currentDateTime}`.substring(0, 32)
@@ -158,7 +216,7 @@ export async function createConfigurationSnapshot(scopes: string[] = ['Configura
 // Parse and convert Graph Errors into regular Error objects for browser processing purposes.
 export function parseGraphErrorMessage(error: unknown) {
   if (!(error instanceof Error)) {
-    return 'A non-error object was received, this is a bug: ' + JSON.stringify(error)
+    return `A non-error object was received, this is a bug: ${JSON.stringify(error)}`
   }
 
   return error.message
