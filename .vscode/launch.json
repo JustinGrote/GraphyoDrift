@@ -1,0 +1,43 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+		{
+			"name": "Edge Debug",
+			"type": "msedge",
+			"request": "launch",
+			"url": "http://localhost:5173",
+			"webRoot": "${workspaceFolder}",
+			"sourceMaps": true,
+			"preLaunchTask": "dev"
+		},
+    {
+      "name": "Debug Vite Dev Server",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Chrome Debug",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}",
+      "sourceMaps": true,
+      "sourceMapPathOverride": {
+        "webpack:///*": "${workspaceFolder}/*"
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Dev Server + Chrome Debug",
+      "configurations": ["Debug Vite Dev Server", "Chrome Debug"],
+      "stopAll": true,
+      "preLaunchTask": "pnpm: dev"
+    }
+  ]
+}

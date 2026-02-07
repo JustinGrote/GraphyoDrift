@@ -1,0 +1,20 @@
+{
+	"servers": {
+		"microsoft-learn": {
+			"type": "http",
+			"url": "https://learn.microsoft.com/api/mcp"
+		},
+		"svelte-docs": {
+			"url": "https://mcp.svelte.dev/mcp",
+			"type": "http"
+		},
+		"flowbite": {
+			"type": "stdio",
+			"command": "pnpx",
+			"args": [
+				"flowbite-mcp"
+			]
+		}
+	},
+	"inputs": []
+}
