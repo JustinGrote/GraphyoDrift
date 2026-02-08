@@ -1,32 +1,26 @@
-import type { IPublicClientApplication } from "@azure/msal-browser";
+import type { AccountInfo, IPublicClientApplication } from '@azure/msal-browser'
 import { type AccessTokenProvider, AllowedHostsValidator, BaseBearerTokenAuthenticationProvider} from "@microsoft/kiota-abstractions";
-
 
 /** Gets access tokens using MSAL browser library. */
 export class MsalAuthenticationProvider extends BaseBearerTokenAuthenticationProvider implements AccessTokenProvider {
-  constructor(msalInstance: IPublicClientApplication, scopes: string[]) {
-    super(new MsalAccessTokenProvider(scopes, msalInstance))
+  constructor(msalInstance: IPublicClientApplication, scopes?: string[], account?: AccountInfo) {
+    super(new MsalAccessTokenProvider(msalInstance, scopes, account))
   }
 
   getAuthorizationToken = this.accessTokenProvider.getAuthorizationToken
   getAllowedHostsValidator = this.accessTokenProvider.getAllowedHostsValidator
 }
 
-/** An authentication provider for Microsoft Graph using MSAL. Fetches the .default scope if not provided. */
-export class GraphMsalAuthenticationProvider extends MsalAuthenticationProvider {
-	constructor(msalInstance: IPublicClientApplication, scopes: string[] = ['https://graph.microsoft.com/.default']) {
-		super(msalInstance, scopes)
-	}
-}
-
 /** This provides access tokens based on an MSAL instance. NOTE: Throws exception if not logged in first */
 class MsalAccessTokenProvider implements AccessTokenProvider {
   private scopes: string[]
   private msalInstance: IPublicClientApplication
+  private account: AccountInfo | undefined
 
-  constructor(scopes: string[], msalInstance: IPublicClientApplication) {
-    this.scopes = scopes
+  constructor(msalInstance: IPublicClientApplication, scopes?: string[], account?: AccountInfo) {
+    this.scopes = scopes ?? []
     this.msalInstance = msalInstance
+    this.account = account ?? msalInstance.getActiveAccount() ?? undefined
   }
 
   async getAuthorizationToken(
@@ -37,7 +31,9 @@ class MsalAccessTokenProvider implements AccessTokenProvider {
 
     const result = await this.msalInstance.acquireTokenSilent({
       scopes: this.scopes,
+      account: this.account,
     })
+
     return result.accessToken
   }
 

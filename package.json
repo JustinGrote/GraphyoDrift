@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "dependencies": {
-    "@azure/msal-browser": "^3.30.0",
+    "@azure/msal-browser": "^4.12.0",
     "@microsoft/kiota-abstractions": "1.0.0-preview.99",
     "@microsoft/kiota-bundle": "1.0.0-preview.99",
     "@microsoft/kiota-http-fetchlibrary": "1.0.0-preview.99",
@@ -13,6 +13,7 @@
     "@microsoft/kiota-serialization-multipart": "1.0.0-preview.99",
     "@microsoft/kiota-serialization-text": "1.0.0-preview.99",
     "@popperjs/core": "^2.11.8",
+    "@tanstack/svelte-db": "^0.1.68",
     "deep-equality-data-structures": "^2.0.0",
     "flowbite-svelte-blocks": "^2.1.0",
     "flowbite-svelte-icons": "^3.1.0",
@@ -22,7 +23,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json"
+    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
+    "generateClient": "pnpx @kiota-community/kiota-gen generate --l typescript -c GraphClient --co -o ./src/Generated/graphChangeSdk -i '/admin/configurationManagement**' -d https://raw.githubusercontent.com/microsoftgraph/msgraph-metadata/609b6c692e5acfef117723da303346df7077f239/openapi/beta/openapi.yaml"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.14",

@@ -25,6 +25,7 @@ dev-dist
 #Project Specific
 Generated
 .edge
+.kiota
 
 #Sensiive
 .env

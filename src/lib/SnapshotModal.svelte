@@ -1,6 +1,6 @@
 <script lang="ts">
 import JsonDiffViewer from './JsonDiffViewer.svelte'
-import { getGraphClient, parseGraphErrorMessage } from './GraphClient'
+import { getGraphClient, parseGraphErrorMessage } from './graphClient'
 import type { ConfigurationBaseline, ConfigurationSnapshotJob } from '../../Generated/graphChangeSdk/models'
 import { Button, Modal, Label, Select, Spinner } from 'flowbite-svelte'
 

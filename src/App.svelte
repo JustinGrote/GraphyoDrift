@@ -2,11 +2,12 @@
 // biome-ignore-all lint/correctness/noUnusedVariables: Doesnt work with svelte
 import { onMount } from 'svelte'
 import appLogo from '/favicon.svg'
-import { getGraphClient, signIn, signOut, getActiveAccount, isMsalConfigured, createConfigurationSnapshot, parseGraphErrorMessage } from './lib/GraphClient'
+import { signIn, signOut, parseGraphErrorMessage, isLoggedIn } from './lib/graphClient'
 import SnapshotModal from './lib/SnapshotModal.svelte'
 import { Button, Card, Badge, Table, TableBody, TableHead, TableHeadCell, TableBodyRow, TableBodyCell, Alert, Heading, P, ButtonGroup } from 'flowbite-svelte'
 import { Section } from 'flowbite-svelte-blocks'
-import type { ConfigurationSnapshotJob } from '../Generated/graphChangeSdk/models';
+import type { ConfigurationSnapshotJob } from './Generated/graphChangeSdk/models';
+import { createConfigurationSnapshot, getSnapshotJobs } from './lib/configClient';
 
 let isLoading = $state(false)
 let errorMessage = $state<string | null>(null)
@@ -19,7 +20,7 @@ const loadSnapshotJobs = async () => {
   errorMessage = null
   isLoading = true
   try {
-    snapshotJobs = getSnapshotJobs()
+    snapshotJobs = await getSnapshotJobs()
   } catch (error) {
     errorMessage = parseGraphErrorMessage(error)
   } finally {
@@ -107,25 +108,17 @@ const isExpiringSoon = (completed?: Date | string | null) => {
 }
 
 onMount(async () => {
-  if (!isMsalConfigured()) {
-    errorMessage = 'Missing VITE_AAD_CLIENT_ID. Add it to a .env file to enable sign-in.'
-    return
-  }
-
-  const existingAccount = getActiveAccount()
-  if (existingAccount) {
-    accountName = existingAccount.name ?? existingAccount.username ?? null
-    await loadSnapshotJobs()
+  try {
+    if (isLoggedIn()) {
+      await loadSnapshotJobs()
+    }
+  } catch (error) {
+    console.debug('Failed to load snapshot jobs on mount', error)
   }
 })
 </script>
 
 <main class="p-8 space-y-6">
-  <Alert>
-    <span class="font-medium">Info alert!</span>
-    Change a few things up and try submitting again.
-  </Alert>
-
   <!-- Hero Section -->
   <Section class="flex flex-col gap-4">
     <img src={appLogo} class="w-16 h-16" alt="GraphyoDrift Logo" />
@@ -141,7 +134,7 @@ onMount(async () => {
 
   <!-- Sign In Card -->
   <Card>
-    <div class="space-y-4">
+    <div>
       <div>
         <Heading tag="h2" class="mb-2">Connect to Microsoft Graph</Heading>
         {#if accountName}
@@ -158,17 +151,11 @@ onMount(async () => {
             {isLoading ? 'Working…' : 'Sign out'}
           </Button>
         {:else}
-          <Button color="blue" onclick={handleSignIn} disabled={isLoading || !isMsalConfigured()}>
+          <Button color="blue" onclick={handleSignIn} disabled={isLoading || isLoggedIn()}>
             {isLoading ? 'Working…' : 'Sign in to Graph'}
           </Button>
         {/if}
       </ButtonGroup>
-      {#if !isMsalConfigured()}
-        <P size="sm" class="text-gray-500">Set VITE_AAD_CLIENT_ID in a .env file.</P>
-      {/if}
-      {#if errorMessage}
-        <Alert color="red">{errorMessage}</Alert>
-      {/if}
     </div>
   </Card>
 
@@ -239,6 +226,12 @@ onMount(async () => {
       </div>
       {/if}
     </div>
+  </Card>
+
+  <Card>
+    {#if errorMessage}
+      <Alert color="red">{errorMessage}</Alert>
+    {/if}
   </Card>
 
   <SnapshotModal
